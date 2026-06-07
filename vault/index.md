@@ -40,3 +40,4 @@ _(пусто)_
 - `notes/pending-review-2026-05-24.md` — pending_review из reconcile 2026-05-24 (skill draft task-status-briefing, skill_candidates.log)
 - `notes/pending-review-2026-05-25.md` — pending_review из reconcile 2026-05-25 (сессия 33692a54 — reconciled.log, skill draft, skill_candidates.log)
 - `notes/изоком-макс-интеграция.md` — MAX мессенджер Bot API, требования, ограничения для сервера вне РФ (2026-05-26)
+- `notes/kavi-оффер.md` — оффер и шаблон аутрича для продажи Кави другим ресторанам, 150к, 4 дня (2026-06-07)
