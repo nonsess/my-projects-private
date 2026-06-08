@@ -6,7 +6,7 @@
 
 **Architecture:** Отдельный Next.js 14 App Router проект, полностью статический (без бэкенда). Все секции — серверные компоненты, кроме интерактивных (калькулятор, PDF, моки). Конфиг пакетов/сайта/FAQ отделён от компонентов.
 
-**Tech Stack:** Next.js 14, TypeScript, Tailwind CSS, Framer Motion, @react-pdf/renderer, Vitest, Vercel.
+**Tech Stack:** Next.js 14, TypeScript, Tailwind CSS, Framer Motion, @react-pdf/renderer, Vitest.
 
 ---
 
@@ -2110,61 +2110,6 @@ npm run dev
 ```bash
 git add app/sitemap.ts app/robots.ts
 git commit -m "feat: sitemap.xml and robots.txt"
-```
-
----
-
-## Task 15: Deploy to Vercel
-
-**Files:**
-- Create: `vercel.json` (опционально)
-
-- [ ] **Step 1: Создать репозиторий на GitHub**
-
-```bash
-# Создай репо на github.com/new (название: restogood-landing)
-git remote add origin https://github.com/<your-username>/restogood-landing.git
-git push -u origin main
-```
-
-- [ ] **Step 2: Задеплоить через Vercel CLI**
-
-```bash
-npm install -g vercel
-vercel
-```
-
-В диалоге:
-- Set up and deploy: `Y`
-- Which scope: выбери свой аккаунт
-- Link to existing project: `N`
-- Project name: `restogood-landing`
-- Directory: `./`
-- Override settings: `N`
-
-- [ ] **Step 3: Обновить site.url в config/site.ts**
-
-После деплоя Vercel выдаст URL вида `https://restogood-landing.vercel.app`. Обновить `config/site.ts`:
-
-```typescript
-url: 'https://restogood-landing.vercel.app', // заменить на реальный URL или свой домен
-```
-
-- [ ] **Step 4: Проверить production build**
-
-Открыть выданный Vercel URL. Проверить:
-- Страница загружается без ошибок консоли
-- Калькулятор считает в реальном времени
-- Кнопка «Скачать КП» генерирует PDF с кириллицей
-- `<produrl>/sitemap.xml` доступен
-- Lighthouse score: Performance > 85, SEO = 100
-
-- [ ] **Step 5: Final commit**
-
-```bash
-git add config/site.ts
-git commit -m "feat: update production url"
-git push
 ```
 
 ---
