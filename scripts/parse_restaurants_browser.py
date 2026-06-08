@@ -46,6 +46,8 @@ DEFAULT_QUERIES = ["ресторан", "кафе", "пиццерия", "стол
 SOCIAL_DOMAINS = ["vk.com", "t.me", "instagram", "facebook", "ok.ru",
                   "youtube", "2gis", "yandex", "google", "max.ru", "whatsapp"]
 
+SOCIAL_TYPES = {"instagram": "instagram", "vkontakte": "vk"}
+
 
 def get_slug(city_name: str) -> str:
     slug = CITY_SLUGS.get(city_name.lower())
@@ -76,20 +78,34 @@ def check_firm_page(session: requests.Session, city_slug: str, firm_id: str) -> 
         cg_block = html[idx:idx + 2000] if idx > 0 else ""
         contacts = re.findall(r'\{[^{}]+\}', cg_block)
         own_sites, phones = [], []
+        socials: dict[str, str] = {}
         for c in contacts:
-            if '"type":"phone"' in c:
+            t = re.search(r'"type"\s*:\s*"([^"]+)"', c)
+            ctype = t.group(1) if t else ""
+            if ctype == "phone":
                 v = re.search(r'"value"\s*:\s*"([^"]+)"', c)
                 if v:
                     phones.append(v.group(1))
-            if '"type":"website"' in c:
+            elif ctype == "website":
                 u = re.search(r'"url"\s*:\s*"([^"]+)"', c)
                 if u:
                     netloc = urlparse(u.group(1)).netloc.lower()
                     if netloc and not any(s in netloc for s in SOCIAL_DOMAINS):
                         own_sites.append(u.group(1))
-        return {"has_site": bool(own_sites), "phone": phones[0] if phones else "", "address": address}
+            elif ctype in SOCIAL_TYPES:
+                u = re.search(r'"url"\s*:\s*"([^"]+)"', c)
+                key = SOCIAL_TYPES[ctype]
+                if u and key not in socials:
+                    socials[key] = u.group(1)
+        return {
+            "has_site": bool(own_sites),
+            "phone": phones[0] if phones else "",
+            "address": address,
+            "instagram": socials.get("instagram", ""),
+            "vk": socials.get("vk", ""),
+        }
     except Exception:
-        return {"has_site": False, "phone": "", "address": ""}
+        return {"has_site": False, "phone": "", "address": "", "instagram": "", "vk": ""}
 
 
 def collect_via_browser(city_slug: str, query: str, scroll_count: int) -> list[dict]:
@@ -116,7 +132,7 @@ def collect_via_browser(city_slug: str, query: str, scroll_count: int) -> list[d
                 collected.append({
                     "id": clean_id,
                     "name": item.get("name", ""),
-                    "address": item.get("address_name", ""),
+                    "address": item.get("address_name", "") or "",
                 })
         except Exception:
             pass
@@ -200,15 +216,18 @@ def parse_city(city_name: str, queries: list[str], out_file: str, scroll_count: 
 
             if not firm["has_site"]:
                 no_site_results.append({
+                    "id": rid,
                     "название": r["name"],
                     "адрес": firm["address"] or r["address"],
                     "телефон": firm["phone"],
+                    "instagram": firm["instagram"],
+                    "vk": firm["vk"],
                 })
 
         print(f"  Новых уникальных: {new_count} | Без сайта всего: {len(no_site_results)}/{total_checked}")
 
     with open(out_file, "w", newline="", encoding="utf-8-sig") as f:
-        writer = csv.DictWriter(f, fieldnames=["название", "адрес", "телефон"])
+        writer = csv.DictWriter(f, fieldnames=["id", "название", "адрес", "телефон", "instagram", "vk"])
         writer.writeheader()
         writer.writerows(no_site_results)
 
