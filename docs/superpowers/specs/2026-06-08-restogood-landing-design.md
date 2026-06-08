@@ -259,6 +259,31 @@ Accordion-компонент (раскрывается по клику).
 
 ---
 
+## SEO
+
+Реализуется средствами Next.js App Router — никаких сторонних библиотек.
+
+**Мета-теги (`app/layout.tsx` + `app/page.tsx`):**
+- `<title>` и `<meta name="description">` — через Next.js Metadata API
+- Open Graph теги (`og:title`, `og:description`, `og:image`) — для красивого превью при шаринге
+- `<link rel="canonical">` — указывает на основной домен
+
+**Структурированные данные:**
+- JSON-LD схема `LocalBusiness` / `SoftwareApplication` в `<head>` — помогает Google понять что это за продукт
+
+**Технические требования:**
+- Семантическая разметка: один `<h1>` на страницу (в Hero), секции через `<section>`, заголовки иерархично `h2` → `h3`
+- Все изображения и мокап-компоненты с атрибутом `alt`
+- `sitemap.xml` — генерируется автоматически через `app/sitemap.ts`
+- `robots.txt` — через `app/robots.ts`, разрешает индексацию
+
+**Производительность (Core Web Vitals):**
+- Шрифты через `next/font` (нет layout shift)
+- Framer Motion анимации только после гидратации (`LazyMotion` + `domAnimation`)
+- `@react-pdf/renderer` загружается динамически (`next/dynamic`, `ssr: false`) — не блокирует первый рендер
+
+---
+
 ## Вне скоупа
 
 - Бэкенд, база данных, аутентификация
