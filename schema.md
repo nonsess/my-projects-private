@@ -138,15 +138,19 @@ updated: YYYY-MM-DD
 ## Операции (старт сессии)
 
 1. `git pull --ff-only` (если remote).
-2. Читать: `vault/profile/about.md`, `vault/project/index.md`, активный проект, последние 7 записей `vault/log.md`.
-3. Если тема — grep по `vault/notes/`, `vault/decisions/`, `vault/log.md`.
+2. Читать параллельно: `vault/profile/about.md`, `vault/project/index.md`, последние 7 записей `vault/log.md`, `vault/goals/today.md`, последние 10 записей `vault/insights/log.md`.
+3. Читать **все** карточки из секции `## Активные` в `vault/project/index.md`.
+4. Если тема — grep по `vault/notes/`, `vault/decisions/`, `vault/log.md`.
 
 ## В конце сессии
 
-1. Обновить `vault/goals/today.md`.
-2. Запись в `vault/log.md`.
-3. Обновить `vault/index.md` при новых файлах.
-4. `git add -A && git commit -m "сессия YYYY-MM-DD: <тип>" && git push 2>/dev/null || true`
+Автоматически, без подтверждения:
+
+1. Append-запись в `vault/log.md`.
+2. Обновить `vault/goals/today.md`.
+3. `git add -A && git commit -m "сессия YYYY-MM-DD: <тип>" && git push 2>/dev/null || true`
+
+Исключение: секреты в файлах → остановиться, предупредить, не коммить.
 
 ## Slug-конвенция
 
