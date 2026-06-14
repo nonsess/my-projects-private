@@ -1,8 +1,8 @@
 ---
 type: goal
 horizon: today
-updated: 2026-06-11
-active_projects: [kavi, restogood-landing]
+updated: 2026-06-14
+active_projects: [kavi]
 ---
 
 # Сегодня
@@ -10,3 +10,21 @@ active_projects: [kavi, restogood-landing]
 - [x] Рефакторинг vault — автоматизация агента
 - [ ] Закрыть предоплату по Кави
 - [ ] Определиться со стратегией конвейера (Кворк / продуктизация)
+
+## 2026-06-14 — сделано по Кави
+
+- [x] Слоты доставки + часы работы (блокировка вне часов, иркутское время)
+- [x] Хиты и дашборд только для COMPLETED заказов + cancel rate
+- [x] Уведомления: браузер (админ + клиент) с beep-звуком
+- [x] PWA манифест + иконки + service worker
+- [x] Web Push уведомления (VAPID, pywebpush, push_subscriptions таблица)
+- [x] SEO: robots, sitemap, OG, JSON-LD Restaurant + FAQPage, FAQ аккордион
+- [x] Юридика: /privacy, /offer, текст согласия под кнопкой
+- [x] Футер: реальные контакты + SEO-текст
+
+## Осталось по Кави (не срочно)
+
+- [ ] Заполнить ИНН/ОГРН в /privacy и /offer
+- [ ] Добавить VAPID ключи в .env на сервере
+- [ ] Подать уведомление в РКН (pd.rkn.gov.ru)
+- [ ] Зарегистрировать Яндекс.Бизнес + Google Business Profile
