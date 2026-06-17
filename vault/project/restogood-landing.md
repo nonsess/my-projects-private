@@ -31,30 +31,36 @@
 
 ## Design System
 
-CSS-переменные в `globals.css`:
-- `--color-dark: #0B0F19` → `bg-dark`, `text-dark`
+**Направление (с 2026-06-18):** «дерзкий + аппетитный» — тёмная база + оранжевый герой, крупная `font-black` типографика, карты-стек. Референс — it-one.ru. Детали и уроки — в memory [[project-restogood-design]].
+
+CSS-переменные в `globals.css` (актуально):
+- `--color-dark: #111110` → `bg-dark`, `text-dark` (был #0B0F19 — синил, конфликтовал с оранжевым)
 - `--color-accent: #FF4D00` → `bg-accent`, `text-accent`, `border-accent`
-- `--color-light: #F5F5F0` → `bg-light`
-- `--color-surface: #131929` → `bg-surface`
-- `--color-muted: #6B7280` → `text-muted`
+- `--color-light: #F6F3EE` → `bg-light`
+- `--color-surface: #1C1B19` → `bg-surface`
+- `--color-muted: #78716C` → `text-muted`
 - Шрифт: **Onest** (Google Fonts, кириллица, `variable: '--font-onest'`)
 
 ---
 
-## Структура секций
+## Структура секций (порядок после переработки 2026-06-18)
+
+Карты-стек (`StackSection`): наезд+скругления у всех, pin (sticky) только на Hero, на мобиле pin off.
 
 | Секция | Фон | Особенности |
 |---|---|---|
-| Navbar | прозрачный / dark при скролле | scroll effect, burger |
-| Hero | bg-dark + radial gradient | h1 extrabold, MockOrderDashboard |
-| Problem | bg-light | 3 карточки, Lucide: TrendingDown/Phone/Database |
-| Solution | bg-dark | glassmorphism карточки, Lucide: 6 иконок, MockAdminPanel |
-| HowItWorks | bg-light | 4 шага, accent номера |
-| Packages | bg-dark | glassmorphism, Lucide Check/Minus, gradient рекомендованный |
-| RoiCalculator | bg-light | шифт-ставка, tabs пакетов, PDF download |
+| Navbar | full-width, dark при скролле | вогнутые углы снизу (inner-radius mask) |
+| Hero | bg-dark + оранжевый glow | огромный h1, кнопки pill+arrow, trust-strip (без анимации зачёркивания) |
+| Problem | bg-light | боль в деньгах: 84 000 ₽, мостик-инсайт |
+| Solution | bg-dark | фичи + MockAdminPanel, инфа про iiko/r_keeper (НЕ удалять) |
+| HowItWorks | bg-light | 4 шага |
+| **WhyUs** | bg-dark | НОВАЯ: отстройка «Сделаю сам выходит дороже» |
+| RoiCalculator | bg-light | **идёт ПЕРЕД Packages** (выгода до цены), PDF download |
+| Packages | bg-dark | «Сколько это стоит», якорь на месяц комиссии |
+| LiveStats | bg-dark | лайв-счётчик |
 | Testimonials | bg-light | 1 отзыв (mock Kavi) |
-| FAQ | bg-dark | accordion, border-white/10 |
-| Footer | bg-dark | CTA + контакты |
+| FAQ | bg-light | продающие возражения первыми + технические |
+| Footer | bg-dark | CTA «Готовы оставлять 28% себе?» + контакты |
 
 ---
 
