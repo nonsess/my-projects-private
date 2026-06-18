@@ -4,16 +4,19 @@
 
 **Goal:** Создать FastAPI-бэкенд, который принимает заявки с лендинга, уведомляет в Telegram и отображает их в Jinja2-админке; добавить форму в лендинг.
 
-**Architecture:** Новый репо `restogood-backend/` — FastAPI + PostgreSQL + Docker. Лендинг остаётся Next.js static export и делает fetch на внешний API. Jinja2-adminка защищена header-токеном, JS не нужен.
+**Architecture:** Монорепо `restogood/` с двумя сервисами — `backend/` (FastAPI + PostgreSQL) и `frontend/` (Next.js, перенесён из `restogood-landing/`). Корневой `docker-compose.yml` поднимает backend + postgres. Фронтенд запускается отдельно (`npm run dev`) или деплоится статически. Jinja2-adminка защищена header-токеном.
 
-**Tech Stack:** Python 3.12, FastAPI, SQLAlchemy 2 (asyncio), asyncpg, Alembic, httpx, Jinja2, pytest + pytest-asyncio + aiosqlite (для тестов), Docker + docker-compose; на лендинге — Next.js 16 / Tailwind v4.
+**Tech Stack:** Python 3.12, FastAPI, SQLAlchemy 2 (asyncio), asyncpg, Alembic, httpx, Jinja2, pytest + pytest-asyncio + aiosqlite (тесты); Next.js 16 / Tailwind v4; Docker + docker-compose.
 
 ## Global Constraints
 
-- Репо бэкенда: `/home/pensioner/coding/restogood-backend/`
-- Репо лендинга: `/home/pensioner/coding/restogood-landing/`
+- Монорепо: `/home/pensioner/coding/restogood/`
+- Бэкенд: `/home/pensioner/coding/restogood/backend/`
+- Фронтенд: `/home/pensioner/coding/restogood/frontend/` (содержимое перенесено из `restogood-landing/`)
+- Корневой docker-compose: `/home/pensioner/coding/restogood/docker-compose.yml`
+- Каждый сервис содержит свой `Dockerfile`
 - Лендинг не меняет `output: 'export'` — форма делает внешний fetch
-- `NEXT_PUBLIC_API_URL` — единственный env-ключ лендинга для бэкенда
+- `NEXT_PUBLIC_API_URL` — единственный env-ключ фронтенда для бэкенда
 - Токены, пароли — только в `.env` / `.env.local`, не в коде и не в git
 - `.env` и `.env.local` — в `.gitignore`; в репо только `.env.example`
 - Tailwind-классы только из design-system: `bg-dark`, `bg-accent`, `bg-light`, `text-accent`, `text-muted`; не использовать `orange-*`, `slate-*` etc.
@@ -21,35 +24,61 @@
 
 ---
 
-### Task 1: Scaffolding — структура репо, Docker, зависимости
+### Task 1: Scaffolding — монорепо, перенос фронтенда, Docker, зависимости
 
 **Files:**
-- Create: `/home/pensioner/coding/restogood-backend/requirements.txt`
-- Create: `/home/pensioner/coding/restogood-backend/Dockerfile`
-- Create: `/home/pensioner/coding/restogood-backend/docker-compose.yml`
-- Create: `/home/pensioner/coding/restogood-backend/.env.example`
-- Create: `/home/pensioner/coding/restogood-backend/.gitignore`
-- Create: `/home/pensioner/coding/restogood-backend/pytest.ini`
-- Create: `/home/pensioner/coding/restogood-backend/app/__init__.py` (пустой)
-- Create: `/home/pensioner/coding/restogood-backend/app/routes/__init__.py` (пустой)
-- Create: `/home/pensioner/coding/restogood-backend/tests/__init__.py` (пустой)
-- Create: `/home/pensioner/coding/restogood-backend/app/main.py` (заглушка)
+- Create: `/home/pensioner/coding/restogood/` (git init)
+- Create: `/home/pensioner/coding/restogood/docker-compose.yml`
+- Create: `/home/pensioner/coding/restogood/.gitignore`
+- Create: `/home/pensioner/coding/restogood/.env.example`
+- Create: `/home/pensioner/coding/restogood/backend/` (перенос из `restogood-backend/` если существует, иначе создать)
+- Create: `/home/pensioner/coding/restogood/backend/requirements.txt`
+- Create: `/home/pensioner/coding/restogood/backend/Dockerfile`
+- Create: `/home/pensioner/coding/restogood/backend/pytest.ini`
+- Create: `/home/pensioner/coding/restogood/backend/app/__init__.py`
+- Create: `/home/pensioner/coding/restogood/backend/app/routes/__init__.py`
+- Create: `/home/pensioner/coding/restogood/backend/app/main.py` (заглушка)
+- Create: `/home/pensioner/coding/restogood/backend/tests/__init__.py`
+- Create: `/home/pensioner/coding/restogood/frontend/` (содержимое из `restogood-landing/`)
+- Create: `/home/pensioner/coding/restogood/frontend/Dockerfile`
 
 **Interfaces:**
-- Produces: рабочий Docker Compose, `uvicorn app.main:app --reload` стартует без ошибок
+- Produces: монорепо с двумя сервисами; `uvicorn app.main:app --reload` стартует из `backend/` без ошибок
 
-- [ ] **Step 1: Создать директорию и git-репо**
+- [ ] **Step 1: Создать монорепо и git-репо**
 
 ```bash
-mkdir -p /home/pensioner/coding/restogood-backend/app/routes
-mkdir -p /home/pensioner/coding/restogood-backend/app/templates/admin
-mkdir -p /home/pensioner/coding/restogood-backend/app/static
-mkdir -p /home/pensioner/coding/restogood-backend/tests
-cd /home/pensioner/coding/restogood-backend && git init
-touch app/__init__.py app/routes/__init__.py tests/__init__.py
+mkdir -p /home/pensioner/coding/restogood
+cd /home/pensioner/coding/restogood && git init
 ```
 
-- [ ] **Step 2: Создать `requirements.txt`**
+- [ ] **Step 2: Перенести фронтенд из `restogood-landing/`**
+
+```bash
+cp -r /home/pensioner/coding/restogood-landing /home/pensioner/coding/restogood/frontend
+rm -rf /home/pensioner/coding/restogood/frontend/.git
+```
+
+Проверить что файлы на месте:
+```bash
+ls /home/pensioner/coding/restogood/frontend/app /home/pensioner/coding/restogood/frontend/components
+```
+
+Ожидаемый вывод: директории с файлами лендинга.
+
+- [ ] **Step 3: Создать структуру `backend/`**
+
+```bash
+mkdir -p /home/pensioner/coding/restogood/backend/app/routes
+mkdir -p /home/pensioner/coding/restogood/backend/app/templates/admin
+mkdir -p /home/pensioner/coding/restogood/backend/app/static
+mkdir -p /home/pensioner/coding/restogood/backend/tests
+touch /home/pensioner/coding/restogood/backend/app/__init__.py
+touch /home/pensioner/coding/restogood/backend/app/routes/__init__.py
+touch /home/pensioner/coding/restogood/backend/tests/__init__.py
+```
+
+- [ ] **Step 4: Создать `backend/requirements.txt`**
 
 ```
 fastapi==0.111.1
@@ -66,7 +95,7 @@ pytest==8.2.2
 pytest-asyncio==0.23.8
 ```
 
-- [ ] **Step 3: Создать `Dockerfile`**
+- [ ] **Step 5: Создать `backend/Dockerfile`**
 
 ```dockerfile
 FROM python:3.12-slim
@@ -84,7 +113,7 @@ USER appuser
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
-- [ ] **Step 4: Создать `docker-compose.yml`**
+- [ ] **Step 6: Создать корневой `docker-compose.yml`**
 
 ```yaml
 services:
@@ -103,7 +132,7 @@ services:
       retries: 5
 
   backend:
-    build: .
+    build: ./backend
     restart: unless-stopped
     depends_on:
       db:
@@ -116,7 +145,7 @@ volumes:
   pgdata:
 ```
 
-- [ ] **Step 5: Создать `.env.example`**
+- [ ] **Step 7: Создать корневой `.env.example`**
 
 ```env
 DATABASE_URL=postgresql+asyncpg://restogood:CHANGE_ME@db:5432/restogood
@@ -128,25 +157,49 @@ ADMIN_BASE_URL=http://localhost:8000
 CORS_ORIGINS=http://localhost:3000,https://restogood.ru
 ```
 
-- [ ] **Step 6: Создать `.gitignore`**
+- [ ] **Step 8: Создать корневой `.gitignore`**
 
 ```
 .env
+.env.local
 __pycache__/
 *.pyc
 .pytest_cache/
 .venv/
+backend/.venv/
+frontend/.next/
+frontend/node_modules/
 dist/
 ```
 
-- [ ] **Step 7: Создать `pytest.ini`**
+- [ ] **Step 9: Создать `frontend/Dockerfile`** (для будущего production-деплоя)
+
+```dockerfile
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+EXPOSE 3000
+CMD ["node", "server.js"]
+```
+
+- [ ] **Step 10: Создать `backend/pytest.ini`**
 
 ```ini
 [pytest]
 asyncio_mode = auto
 ```
 
-- [ ] **Step 8: Создать заглушку `app/main.py`**
+- [ ] **Step 11: Создать заглушку `backend/app/main.py`**
 
 ```python
 from fastapi import FastAPI
@@ -158,21 +211,22 @@ async def health():
     return {"status": "ok"}
 ```
 
-- [ ] **Step 9: Проверить что uvicorn стартует**
+- [ ] **Step 12: Проверить что uvicorn стартует**
 
 ```bash
-cd /home/pensioner/coding/restogood-backend
+cd /home/pensioner/coding/restogood/backend
+pip install -r requirements.txt
 python -m uvicorn app.main:app --reload
 ```
 
 Ожидаемый вывод: `Application startup complete.` (затем Ctrl+C).
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 13: Commit**
 
 ```bash
-cd /home/pensioner/coding/restogood-backend
+cd /home/pensioner/coding/restogood
 git add .
-git commit -m "feat: scaffold restogood-backend — FastAPI skeleton, Docker, deps"
+git commit -m "feat: scaffold restogood monorepo — backend skeleton, frontend transfer, Docker"
 ```
 
 ---
@@ -180,9 +234,9 @@ git commit -m "feat: scaffold restogood-backend — FastAPI skeleton, Docker, de
 ### Task 2: Config + Database + Model
 
 **Files:**
-- Create: `app/config.py`
-- Create: `app/database.py`
-- Create: `app/models.py`
+- Create: `backend/app/config.py`
+- Create: `backend/app/database.py`
+- Create: `backend/app/models.py`
 
 **Interfaces:**
 - Produces:
@@ -191,7 +245,7 @@ git commit -m "feat: scaffold restogood-backend — FastAPI skeleton, Docker, de
   - `get_db` — FastAPI dependency, yields `AsyncSession`
   - `Lead` — ORM-модель таблицы `leads`
 
-- [ ] **Step 1: Создать `app/config.py`**
+- [ ] **Step 1: Создать `backend/app/config.py`**
 
 ```python
 from pydantic_settings import BaseSettings
@@ -215,7 +269,7 @@ class Settings(BaseSettings):
 settings = Settings()
 ```
 
-- [ ] **Step 2: Создать `app/database.py`**
+- [ ] **Step 2: Создать `backend/app/database.py`**
 
 ```python
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
@@ -236,7 +290,7 @@ async def get_db() -> AsyncSession:
         yield session
 ```
 
-- [ ] **Step 3: Создать `app/models.py`**
+- [ ] **Step 3: Создать `backend/app/models.py`**
 
 ```python
 from datetime import datetime
@@ -267,7 +321,7 @@ class Lead(Base):
 - [ ] **Step 4: Проверить импорты**
 
 ```bash
-cd /home/pensioner/coding/restogood-backend
+cd /home/pensioner/coding/restogood/backend
 DATABASE_URL=sqlite+aiosqlite:///:memory: ADMIN_TOKEN=x python -c "from app.models import Lead; print(Lead.__tablename__)"
 ```
 
@@ -276,7 +330,8 @@ DATABASE_URL=sqlite+aiosqlite:///:memory: ADMIN_TOKEN=x python -c "from app.mode
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/config.py app/database.py app/models.py
+cd /home/pensioner/coding/restogood
+git add backend/app/config.py backend/app/database.py backend/app/models.py
 git commit -m "feat: add config, database, Lead model"
 ```
 
@@ -285,35 +340,32 @@ git commit -m "feat: add config, database, Lead model"
 ### Task 3: Alembic — настройка и первая миграция
 
 **Files:**
-- Create: `alembic.ini`
-- Create: `alembic/env.py`
-- Create: `alembic/script.py.mako`
-- Create: `alembic/versions/0001_create_leads_table.py`
+- Create: `backend/alembic.ini`
+- Create: `backend/alembic/env.py`
+- Create: `backend/alembic/script.py.mako`
+- Create: `backend/alembic/versions/0001_create_leads_table.py`
 
 **Interfaces:**
-- Produces: команда `alembic upgrade head` создаёт таблицу `leads` в PostgreSQL
+- Produces: команда `alembic upgrade head` (из `backend/`) создаёт таблицу `leads` в PostgreSQL
 
-- [ ] **Step 1: Инициализировать Alembic**
+- [ ] **Step 1: Инициализировать Alembic из `backend/`**
 
 ```bash
-cd /home/pensioner/coding/restogood-backend
-pip install alembic  # если ещё не установлен в venv
+cd /home/pensioner/coding/restogood/backend
 alembic init alembic
 ```
 
 Создаёт `alembic/`, `alembic.ini`.
 
-- [ ] **Step 2: Обновить `alembic.ini` — убрать жёстко прописанный sqlalchemy.url**
+- [ ] **Step 2: Убрать жёстко прописанный sqlalchemy.url из `backend/alembic.ini`**
 
-В `alembic.ini` найти строку `sqlalchemy.url = driver://user:pass@localhost/dbname` и заменить на:
+Найти строку `sqlalchemy.url = driver://user:pass@localhost/dbname` и заменить на:
 
 ```ini
 sqlalchemy.url =
 ```
 
-(пустое значение — URL будет браться из env в `env.py`)
-
-- [ ] **Step 3: Заменить `alembic/env.py`**
+- [ ] **Step 3: Заменить `backend/alembic/env.py`**
 
 ```python
 import asyncio
@@ -360,9 +412,7 @@ else:
     asyncio.run(run_migrations_online())
 ```
 
-- [ ] **Step 4: Создать первую миграцию вручную**
-
-Создать файл `alembic/versions/0001_create_leads_table.py`:
+- [ ] **Step 4: Создать `backend/alembic/versions/0001_create_leads_table.py`**
 
 ```python
 """create leads table
@@ -412,16 +462,17 @@ def downgrade() -> None:
 - [ ] **Step 5: Проверить что миграция парсится корректно**
 
 ```bash
-cd /home/pensioner/coding/restogood-backend
+cd /home/pensioner/coding/restogood/backend
 DATABASE_URL=sqlite+aiosqlite:///:memory: ADMIN_TOKEN=x alembic check
 ```
 
-Ожидаемый вывод: `No new upgrade operations detected.` или информация о миграции без ошибок.
+Ожидаемый вывод: нет ошибок.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add alembic.ini alembic/
+cd /home/pensioner/coding/restogood
+git add backend/alembic.ini backend/alembic/
 git commit -m "feat: add alembic migrations — create leads table"
 ```
 
@@ -430,11 +481,11 @@ git commit -m "feat: add alembic migrations — create leads table"
 ### Task 4: Lead endpoint + тесты
 
 **Files:**
-- Create: `app/schemas.py`
-- Create: `app/routes/leads.py`
-- Modify: `app/main.py`
-- Create: `tests/conftest.py`
-- Create: `tests/test_leads.py`
+- Create: `backend/app/schemas.py`
+- Create: `backend/app/routes/leads.py`
+- Modify: `backend/app/main.py`
+- Create: `backend/tests/conftest.py`
+- Create: `backend/tests/test_leads.py`
 
 **Interfaces:**
 - Consumes: `Lead` (из `app.models`), `get_db` (из `app.database`), `settings` (из `app.config`)
@@ -445,7 +496,7 @@ git commit -m "feat: add alembic migrations — create leads table"
 
 - [ ] **Step 1: Написать тесты (сначала)**
 
-Создать `tests/conftest.py`:
+Создать `backend/tests/conftest.py`:
 
 ```python
 import os
@@ -493,7 +544,7 @@ async def client(reset_db):
     app.dependency_overrides.clear()
 ```
 
-Создать `tests/test_leads.py`:
+Создать `backend/tests/test_leads.py`:
 
 ```python
 async def test_create_lead_success(client):
@@ -537,14 +588,13 @@ async def test_create_lead_empty_name(client):
 - [ ] **Step 2: Запустить тесты — убедиться что падают**
 
 ```bash
-cd /home/pensioner/coding/restogood-backend
-pip install -r requirements.txt
+cd /home/pensioner/coding/restogood/backend
 pytest tests/test_leads.py -v
 ```
 
-Ожидаемый вывод: `ImportError` или `404 Not Found` — эндпоинт ещё не существует.
+Ожидаемый вывод: ошибка — эндпоинт не существует.
 
-- [ ] **Step 3: Создать `app/schemas.py`**
+- [ ] **Step 3: Создать `backend/app/schemas.py`**
 
 ```python
 from typing import Any
@@ -564,7 +614,7 @@ class LeadOut(BaseModel):
     model_config = {"from_attributes": True}
 ```
 
-- [ ] **Step 4: Создать `app/routes/leads.py`**
+- [ ] **Step 4: Создать `backend/app/routes/leads.py`**
 
 ```python
 from fastapi import APIRouter, Depends, status
@@ -586,9 +636,7 @@ async def create_lead(body: LeadCreate, db: AsyncSession = Depends(get_db)):
     return lead
 ```
 
-(Telegram будет добавлен в Task 5 — не добавляем сюда заранее.)
-
-- [ ] **Step 5: Обновить `app/main.py`**
+- [ ] **Step 5: Обновить `backend/app/main.py`**
 
 ```python
 from fastapi import FastAPI
@@ -616,23 +664,17 @@ async def health():
 - [ ] **Step 6: Запустить тесты — убедиться что проходят**
 
 ```bash
+cd /home/pensioner/coding/restogood/backend
 pytest tests/test_leads.py -v
 ```
 
-Ожидаемый вывод:
-```
-tests/test_leads.py::test_create_lead_success PASSED
-tests/test_leads.py::test_create_lead_with_roi PASSED
-tests/test_leads.py::test_create_lead_missing_name PASSED
-tests/test_leads.py::test_create_lead_missing_phone PASSED
-tests/test_leads.py::test_create_lead_empty_name PASSED
-5 passed
-```
+Ожидаемый вывод: `5 passed`
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add app/schemas.py app/routes/leads.py app/main.py tests/
+cd /home/pensioner/coding/restogood
+git add backend/app/schemas.py backend/app/routes/leads.py backend/app/main.py backend/tests/
 git commit -m "feat: add POST /api/leads endpoint with tests"
 ```
 
@@ -641,21 +683,20 @@ git commit -m "feat: add POST /api/leads endpoint with tests"
 ### Task 5: Telegram-уведомление
 
 **Files:**
-- Create: `app/telegram.py`
-- Modify: `app/routes/leads.py`
-- Create: `tests/test_telegram.py`
+- Create: `backend/app/telegram.py`
+- Modify: `backend/app/routes/leads.py`
+- Create: `backend/tests/test_telegram.py`
 
 **Interfaces:**
 - Consumes: `settings.telegram_bot_token`, `settings.telegram_chat_id`, `settings.admin_base_url`
 - Produces: `notify_new_lead(lead_id, name, phone, roi_data)` — async функция, тихо не падает если токен пустой или Telegram недоступен
 
-- [ ] **Step 1: Написать тест для `notify_new_lead`**
+- [ ] **Step 1: Написать тесты**
 
-Создать `tests/test_telegram.py`:
+Создать `backend/tests/test_telegram.py`:
 
 ```python
 from unittest.mock import AsyncMock, MagicMock, patch
-import pytest
 from app.telegram import notify_new_lead
 
 
@@ -690,11 +731,10 @@ async def test_notify_sends_message_with_roi():
             )
 
     mock_client.post.assert_called_once()
-    call_kwargs = mock_client.post.call_args
-    text = call_kwargs.kwargs["json"]["text"]
+    text = mock_client.post.call_args.kwargs["json"]["text"]
     assert "Мария" in text
     assert "+7 900 000 00 00" in text
-    assert "87" in text  # savings_per_month
+    assert "87" in text
     assert "/admin/leads/42" in text
 
 
@@ -722,12 +762,13 @@ async def test_notify_sends_message_without_roi():
 - [ ] **Step 2: Запустить тесты — убедиться что падают**
 
 ```bash
+cd /home/pensioner/coding/restogood/backend
 pytest tests/test_telegram.py -v
 ```
 
 Ожидаемый вывод: `ModuleNotFoundError: No module named 'app.telegram'`
 
-- [ ] **Step 3: Создать `app/telegram.py`**
+- [ ] **Step 3: Создать `backend/app/telegram.py`**
 
 ```python
 import httpx
@@ -777,6 +818,7 @@ async def notify_new_lead(
 - [ ] **Step 4: Запустить тесты — убедиться что проходят**
 
 ```bash
+cd /home/pensioner/coding/restogood/backend
 pytest tests/test_telegram.py -v
 ```
 
@@ -784,7 +826,7 @@ pytest tests/test_telegram.py -v
 
 - [ ] **Step 5: Подключить Telegram к leads endpoint**
 
-Обновить `app/routes/leads.py`:
+Обновить `backend/app/routes/leads.py`:
 
 ```python
 from fastapi import APIRouter, Depends, status
@@ -814,6 +856,7 @@ async def create_lead(body: LeadCreate, db: AsyncSession = Depends(get_db)):
 - [ ] **Step 6: Убедиться что все тесты проходят**
 
 ```bash
+cd /home/pensioner/coding/restogood/backend
 pytest tests/ -v
 ```
 
@@ -822,7 +865,8 @@ pytest tests/ -v
 - [ ] **Step 7: Commit**
 
 ```bash
-git add app/telegram.py app/routes/leads.py tests/test_telegram.py
+cd /home/pensioner/coding/restogood
+git add backend/app/telegram.py backend/app/routes/leads.py backend/tests/test_telegram.py
 git commit -m "feat: add Telegram notification on new lead"
 ```
 
@@ -831,9 +875,9 @@ git commit -m "feat: add Telegram notification on new lead"
 ### Task 6: Admin routes + тесты
 
 **Files:**
-- Create: `app/routes/admin.py`
-- Modify: `app/main.py`
-- Create: `tests/test_admin.py`
+- Create: `backend/app/routes/admin.py`
+- Modify: `backend/app/main.py`
+- Create: `backend/tests/test_admin.py`
 
 **Interfaces:**
 - Consumes: `Lead` (из `app.models`), `get_db`, `settings.admin_token`
@@ -844,14 +888,10 @@ git commit -m "feat: add Telegram notification on new lead"
 
 - [ ] **Step 1: Написать тесты**
 
-Создать `tests/test_admin.py`:
+Создать `backend/tests/test_admin.py`:
 
 ```python
-import pytest
-from app.config import settings
-
-
-ADMIN_TOKEN = "test-admin-token"  # совпадает с conftest.py os.environ
+ADMIN_TOKEN = "test-admin-token"  # совпадает с conftest.py
 
 
 async def test_list_leads_no_token(client):
@@ -873,7 +913,7 @@ async def test_list_leads_with_token(client):
 async def test_list_leads_shows_created_lead(client):
     await client.post("/api/leads", json={"name": "Тест", "phone": "123"})
     response = await client.get("/admin/leads", headers={"X-Admin-Token": ADMIN_TOKEN})
-    assert b"\xd0\xa2\xd0\xb5\xd1\x81\xd1\x82" in response.content  # "Тест" in UTF-8
+    assert b"\xd0\xa2\xd0\xb5\xd1\x81\xd1\x82" in response.content  # "Тест" UTF-8
 
 
 async def test_get_lead_detail(client):
@@ -905,19 +945,19 @@ async def test_update_lead_status(client):
 - [ ] **Step 2: Запустить тесты — убедиться что падают**
 
 ```bash
+cd /home/pensioner/coding/restogood/backend
 pytest tests/test_admin.py -v
 ```
 
-Ожидаемый вывод: ошибки 404 или ImportError.
+Ожидаемый вывод: ошибки 404.
 
-- [ ] **Step 3: Создать временные заглушки шаблонов** (нужны для того чтобы Jinja2 не падал — UI в Task 7)
+- [ ] **Step 3: Создать заглушки шаблонов** (нужны для Jinja2)
 
 ```bash
-cd /home/pensioner/coding/restogood-backend
-mkdir -p app/templates/admin
+mkdir -p /home/pensioner/coding/restogood/backend/app/templates/admin
 ```
 
-Создать `app/templates/admin/base.html`:
+Создать `backend/app/templates/admin/base.html`:
 
 ```html
 <!DOCTYPE html>
@@ -933,19 +973,17 @@ mkdir -p app/templates/admin
 </html>
 ```
 
-Создать `app/templates/admin/leads.html`:
+Создать `backend/app/templates/admin/leads.html`:
 
 ```html
 {% extends "admin/base.html" %}
 {% block content %}
 <h1>Заявки</h1>
-{% for lead in leads %}
-<p>{{ lead.name }} — {{ lead.phone }} — {{ lead.status }}</p>
-{% endfor %}
+{% for lead in leads %}<p>{{ lead.name }} — {{ lead.phone }} — {{ lead.status }}</p>{% endfor %}
 {% endblock %}
 ```
 
-Создать `app/templates/admin/lead.html`:
+Создать `backend/app/templates/admin/lead.html`:
 
 ```html
 {% extends "admin/base.html" %}
@@ -959,7 +997,7 @@ mkdir -p app/templates/admin
 {% endblock %}
 ```
 
-- [ ] **Step 4: Создать `app/routes/admin.py`**
+- [ ] **Step 4: Создать `backend/app/routes/admin.py`**
 
 ```python
 from datetime import datetime, timezone
@@ -1035,7 +1073,7 @@ async def update_lead(
     return RedirectResponse(url=f"/admin/leads/{lead_id}", status_code=303)
 ```
 
-- [ ] **Step 5: Подключить роутер admin в `app/main.py`**
+- [ ] **Step 5: Подключить admin-роутер и StaticFiles в `backend/app/main.py`**
 
 ```python
 from fastapi import FastAPI
@@ -1063,15 +1101,16 @@ async def health():
     return {"status": "ok"}
 ```
 
-Создать пустой файл чтобы StaticFiles не падал:
+Создать файл чтобы StaticFiles не падал при пустой директории:
 
 ```bash
-touch /home/pensioner/coding/restogood-backend/app/static/.gitkeep
+touch /home/pensioner/coding/restogood/backend/app/static/.gitkeep
 ```
 
 - [ ] **Step 6: Запустить все тесты**
 
 ```bash
+cd /home/pensioner/coding/restogood/backend
 pytest tests/ -v
 ```
 
@@ -1080,7 +1119,8 @@ pytest tests/ -v
 - [ ] **Step 7: Commit**
 
 ```bash
-git add app/routes/admin.py app/main.py app/templates/ app/static/.gitkeep tests/test_admin.py
+cd /home/pensioner/coding/restogood
+git add backend/app/routes/admin.py backend/app/main.py backend/app/templates/ backend/app/static/.gitkeep backend/tests/test_admin.py
 git commit -m "feat: add admin routes with token auth and stub templates"
 ```
 
@@ -1089,15 +1129,15 @@ git commit -m "feat: add admin routes with token auth and stub templates"
 ### Task 7: Admin UI — полные Jinja2-шаблоны и CSS
 
 **Files:**
-- Modify: `app/templates/admin/base.html`
-- Modify: `app/templates/admin/leads.html`
-- Modify: `app/templates/admin/lead.html`
-- Create: `app/static/admin.css`
+- Modify: `backend/app/templates/admin/base.html`
+- Modify: `backend/app/templates/admin/leads.html`
+- Modify: `backend/app/templates/admin/lead.html`
+- Create: `backend/app/static/admin.css`
 
 **Interfaces:**
-- Produces: Полнофункциональная тёмная веб-админка на `/admin/leads`
+- Produces: полнофункциональная тёмная веб-админка на `/admin/leads`
 
-- [ ] **Step 1: Создать `app/static/admin.css`**
+- [ ] **Step 1: Создать `backend/app/static/admin.css`**
 
 ```css
 *, *::before, *::after { box-sizing: border-box; }
@@ -1234,7 +1274,7 @@ form.update-form button:hover { opacity: .85; }
 .empty { color: var(--muted); text-align: center; padding: 40px; }
 ```
 
-- [ ] **Step 2: Обновить `app/templates/admin/base.html`**
+- [ ] **Step 2: Обновить `backend/app/templates/admin/base.html`**
 
 ```html
 <!DOCTYPE html>
@@ -1256,7 +1296,7 @@ form.update-form button:hover { opacity: .85; }
 </html>
 ```
 
-- [ ] **Step 3: Обновить `app/templates/admin/leads.html`**
+- [ ] **Step 3: Обновить `backend/app/templates/admin/leads.html`**
 
 ```html
 {% extends "admin/base.html" %}
@@ -1302,7 +1342,7 @@ form.update-form button:hover { opacity: .85; }
 {% endblock %}
 ```
 
-- [ ] **Step 4: Обновить `app/templates/admin/lead.html`**
+- [ ] **Step 4: Обновить `backend/app/templates/admin/lead.html`**
 
 ```html
 {% extends "admin/base.html" %}
@@ -1341,72 +1381,61 @@ form.update-form button:hover { opacity: .85; }
 {% endblock %}
 ```
 
-- [ ] **Step 5: Запустить все тесты — убедиться что ничего не сломалось**
+- [ ] **Step 5: Запустить все тесты**
 
 ```bash
-cd /home/pensioner/coding/restogood-backend
+cd /home/pensioner/coding/restogood/backend
 pytest tests/ -v
 ```
 
 Ожидаемый вывод: `13 passed`
 
-- [ ] **Step 6: Ручная проверка в браузере**
+- [ ] **Step 6: Commit**
 
 ```bash
-# Запустить с тестовыми env-переменными
-DATABASE_URL=sqlite+aiosqlite:///./test_local.db ADMIN_TOKEN=admin123 uvicorn app.main:app --reload
-```
-
-Открыть в браузере: `http://localhost:8000/admin/leads` с header `X-Admin-Token: admin123`.  
-Или через curl: `curl -H "X-Admin-Token: admin123" http://localhost:8000/admin/leads`
-
-Ожидаемый вывод: HTML-страница с таблицей (пустой).
-
-```bash
-# Убрать тестовую БД
-rm -f test_local.db
-```
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add app/templates/ app/static/admin.css
+cd /home/pensioner/coding/restogood
+git add backend/app/templates/ backend/app/static/admin.css
 git commit -m "feat: full admin UI — Jinja2 templates + dark CSS"
 ```
 
 ---
 
-### Task 8: Лендинг — LeadForm + интеграция
+### Task 8: Фронтенд — LeadForm + интеграция
 
 **Files:**
-- Create: `/home/pensioner/coding/restogood-landing/components/sections/LeadForm.tsx`
-- Modify: `/home/pensioner/coding/restogood-landing/components/sections/Footer.tsx`
-- Modify: `/home/pensioner/coding/restogood-landing/components/sections/RoiCalculator.tsx`
-- Create: `/home/pensioner/coding/restogood-landing/.env.local.example`
+- Create: `frontend/components/sections/LeadForm.tsx`
+- Modify: `frontend/components/sections/Footer.tsx`
+- Modify: `frontend/components/sections/RoiCalculator.tsx`
+- Create: `frontend/.env.local.example`
 
 **Interfaces:**
 - Consumes: `NEXT_PUBLIC_API_URL` из env, `sessionStorage` для ROI-контекста
-- Produces: форма в Footer принимает заявки; RoiCalculator сохраняет ROI в sessionStorage и прокручивает к форме
+- Produces: форма в Footer с `id="lead-form"`; RoiCalculator сохраняет контекст в sessionStorage и скроллит к форме
 
-- [ ] **Step 1: Создать `.env.local.example` в лендинге**
+Текущее состояние `frontend/` (перенесено из `restogood-landing/`):
+- `Footer.tsx` имеет CTA-блок «Пора вернуть своих клиентов» с двумя кнопками
+- `RoiCalculator.tsx` имеет `<div className="flex flex-col gap-3">` с `KpPdfDownloadButton` и ссылкой на Telegram
+- `Button` принимает `arrow`, `size`, `variant`, `disabled` пропсы
+
+- [ ] **Step 1: Создать `frontend/.env.local.example`**
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
-Добавить `.env.local` в `.gitignore` лендинга (если ещё нет):
+Добавить `.env.local` в `frontend/.gitignore` если ещё нет:
 
 ```bash
-grep -q '.env.local' /home/pensioner/coding/restogood-landing/.gitignore || echo '.env.local' >> /home/pensioner/coding/restogood-landing/.gitignore
+grep -q '.env.local' /home/pensioner/coding/restogood/frontend/.gitignore || echo '.env.local' >> /home/pensioner/coding/restogood/frontend/.gitignore
 ```
 
-Создать `.env.local` для разработки:
+Создать для локальной разработки:
 
 ```bash
-echo 'NEXT_PUBLIC_API_URL=http://localhost:8000' > /home/pensioner/coding/restogood-landing/.env.local
+echo 'NEXT_PUBLIC_API_URL=http://localhost:8000' > /home/pensioner/coding/restogood/frontend/.env.local
 ```
 
-- [ ] **Step 2: Создать `components/sections/LeadForm.tsx`**
+- [ ] **Step 2: Создать `frontend/components/sections/LeadForm.tsx`**
 
 ```tsx
 'use client'
@@ -1434,7 +1463,7 @@ export function LeadForm() {
       const raw = sessionStorage.getItem('rg_roi_context')
       if (raw) setRoiContext(JSON.parse(raw))
     } catch {
-      // sessionStorage недоступен (SSR или приватный режим) — не страшно
+      // sessionStorage недоступен — не страшно
     }
   }, [])
 
@@ -1507,15 +1536,15 @@ export function LeadForm() {
 }
 ```
 
-- [ ] **Step 3: Обновить `components/sections/Footer.tsx` — добавить LeadForm**
+- [ ] **Step 3: Обновить `frontend/components/sections/Footer.tsx`**
 
-Добавить импорт после строки `import { Button } from '@/components/ui/Button'`:
+Добавить импорт в начало файла (после `import { Button } from '@/components/ui/Button'`):
 
 ```tsx
 import { LeadForm } from '@/components/sections/LeadForm'
 ```
 
-Заменить блок `<div className="flex flex-col sm:flex-row gap-3 shrink-0">` ... `</div>` (кнопки CTA) на форму:
+Заменить блок с двумя кнопками CTA:
 
 Найти:
 ```tsx
@@ -1559,9 +1588,9 @@ import { LeadForm } from '@/components/sections/LeadForm'
             </div>
 ```
 
-- [ ] **Step 4: Обновить `components/sections/RoiCalculator.tsx` — кнопка «Получить предложение»**
+- [ ] **Step 4: Обновить `frontend/components/sections/RoiCalculator.tsx`**
 
-После строки `<KpPdfDownloadButton data={pdfData} />` добавить кнопку:
+Найти блок `{/* CTAs */}` и добавить кнопку «Получить предложение» между `KpPdfDownloadButton` и ссылкой на Telegram:
 
 Найти:
 ```tsx
@@ -1569,6 +1598,7 @@ import { LeadForm } from '@/components/sections/LeadForm'
             <div className="flex flex-col gap-3">
               <KpPdfDownloadButton data={pdfData} />
               <a
+                href={site.contacts.telegram}
 ```
 
 Заменить на:
@@ -1600,68 +1630,62 @@ import { LeadForm } from '@/components/sections/LeadForm'
                 Получить предложение →
               </button>
               <a
+                href={site.contacts.telegram}
 ```
 
 - [ ] **Step 5: Проверить TypeScript**
 
 ```bash
-cd /home/pensioner/coding/restogood-landing
+cd /home/pensioner/coding/restogood/frontend
 npx tsc --noEmit
 ```
 
 Ожидаемый вывод: `0 errors`
 
-- [ ] **Step 6: Запустить dev-сервер и проверить форму вручную**
+- [ ] **Step 6: Запустить dev-сервер и проверить вручную**
 
 ```bash
-cd /home/pensioner/coding/restogood-landing
+cd /home/pensioner/coding/restogood/frontend
 npm run dev
 ```
 
-Открыть `http://localhost:3000`, прокрутить вниз, заполнить форму в Footer и нажать «Получить предложение». Бэкенд должен быть запущен (`uvicorn app.main:app --reload` в `restogood-backend/`).
+Открыть `http://localhost:3000`. Проверить:
+- Форма в Footer отображается
+- Кнопка «Получить предложение» в RoiCalculator скроллит к форме
+- При заполнении и отправке: статус меняется на «Отправляем...» → «Заявка отправлена»
+  (бэкенд должен быть запущен: `cd backend && DATABASE_URL=sqlite+aiosqlite:///./dev.db ADMIN_TOKEN=admin123 uvicorn app.main:app --reload`)
 
-Ожидаемый результат:
-- Форма показывает «Отправляем...»
-- Появляется «Заявка отправлена»
-- В `GET /admin/leads` появляется запись (проверить через curl с токеном)
-
-- [ ] **Step 7: Commit лендинга**
+- [ ] **Step 7: Commit**
 
 ```bash
-cd /home/pensioner/coding/restogood-landing
-git add components/sections/LeadForm.tsx components/sections/Footer.tsx components/sections/RoiCalculator.tsx .env.local.example .gitignore
+cd /home/pensioner/coding/restogood
+git add frontend/components/sections/LeadForm.tsx frontend/components/sections/Footer.tsx frontend/components/sections/RoiCalculator.tsx frontend/.env.local.example frontend/.gitignore
 git commit -m "feat: add LeadForm to Footer, ROI context via sessionStorage"
-```
-
-- [ ] **Step 8: Commit бэкенда (финальный)**
-
-```bash
-cd /home/pensioner/coding/restogood-backend
-git add .
-git commit -m "chore: final cleanup and .gitignore"
 ```
 
 ---
 
 ## Self-Review — соответствие спеку
 
-| Требование из спека | Задача |
+| Требование | Задача |
 |---|---|
+| Монорепо `restogood/` с `backend/` и `frontend/` | Task 1 |
+| Корневой `docker-compose.yml` | Task 1 |
+| `Dockerfile` в каждом сервисе | Task 1 (backend), Task 8 (frontend) |
 | `POST /api/leads` с валидацией name/phone/roi_data | Task 4 |
 | Response 201 `{id, status}` | Task 4 |
-| PostgreSQL таблица leads (все 8 колонок) | Task 2 + Task 3 |
+| PostgreSQL таблица leads (8 колонок) | Task 2 + Task 3 |
 | Alembic-миграция | Task 3 |
-| Telegram-уведомление (fire-and-forget, тихо если нет токена) | Task 5 |
-| ROI-строка в Telegram только если roi_data есть | Task 5 |
-| `GET /admin/leads` — HTML, X-Admin-Token, фильтр по status | Task 6 + Task 7 |
+| Telegram-уведомление (тихо если нет токена) | Task 5 |
+| ROI-строка только если roi_data есть | Task 5 |
+| `GET /admin/leads` — HTML, X-Admin-Token, фильтр | Task 6 + Task 7 |
 | `GET /admin/leads/{id}` — детальная карточка | Task 6 + Task 7 |
-| `POST /admin/leads/{id}` — обновить status/notes, redirect 303 | Task 6 |
+| `POST /admin/leads/{id}` — статус/заметки, redirect 303 | Task 6 |
 | Тёмный CSS без JS-фреймворков | Task 7 |
-| CORS под домен лендинга | Task 4 (main.py) |
-| Docker + docker-compose + Dockerfile | Task 1 |
+| CORS | Task 4 (main.py) |
 | `.env.example` с ADMIN_BASE_URL | Task 1 |
-| `LeadForm` в Footer | Task 8 |
-| ROI-контекст из калькулятора → sessionStorage → форма | Task 8 |
+| `LeadForm` в Footer с `id="lead-form"` | Task 8 |
+| ROI-контекст через sessionStorage | Task 8 |
 | Кнопка «Получить предложение» в RoiCalculator | Task 8 |
-| `NEXT_PUBLIC_API_URL` env в лендинге | Task 8 |
-| Тесты: happy path, 422, 403, 200 | Tasks 4, 5, 6 |
+| `NEXT_PUBLIC_API_URL` в фронтенде | Task 8 |
+| Тесты: 5 leads + 3 telegram + 6 admin | Tasks 4, 5, 6 |
