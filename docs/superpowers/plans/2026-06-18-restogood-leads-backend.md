@@ -496,17 +496,43 @@ git commit -m "feat: add alembic migrations — create leads table"
 
 - [ ] **Step 1: Написать тесты (сначала)**
 
+Перед запуском тестов нужен запущенный PostgreSQL из docker-compose:
+`cd /home/pensioner/coding/restogood && docker-compose up -d db`
+
+И создать тестовую БД (один раз):
+```bash
+docker exec -it restogood-db-1 psql -U restogood -c "CREATE DATABASE restogood_test;"
+```
+
+Создать `backend/.env.test`:
+```env
+DATABASE_URL=postgresql+asyncpg://restogood:CHANGE_ME@localhost:5432/restogood
+ADMIN_TOKEN=test-admin-token
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+ADMIN_BASE_URL=http://localhost:8000
+CORS_ORIGINS=http://localhost:3000
+TEST_DATABASE_URL=postgresql+asyncpg://restogood:CHANGE_ME@localhost:5432/restogood_test
+```
+
+Добавить `backend/.env.test` в `.gitignore` (корневой).
+
 Создать `backend/tests/conftest.py`:
 
 ```python
 import os
 
-os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://restogood:CHANGE_ME@localhost:5432/restogood")
 os.environ.setdefault("ADMIN_TOKEN", "test-admin-token")
 os.environ.setdefault("TELEGRAM_BOT_TOKEN", "")
 os.environ.setdefault("TELEGRAM_CHAT_ID", "")
 os.environ.setdefault("ADMIN_BASE_URL", "http://localhost:8000")
 os.environ.setdefault("CORS_ORIGINS", "http://localhost:3000")
+
+TEST_DATABASE_URL = os.environ.get(
+    "TEST_DATABASE_URL",
+    "postgresql+asyncpg://restogood:CHANGE_ME@localhost:5432/restogood_test",
+)
 
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
@@ -515,7 +541,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from app.database import Base, get_db
 from app.main import app
 
-TEST_ENGINE = create_async_engine("sqlite+aiosqlite:///:memory:")
+TEST_ENGINE = create_async_engine(TEST_DATABASE_URL)
 TestSessionFactory = async_sessionmaker(TEST_ENGINE, expire_on_commit=False)
 
 
