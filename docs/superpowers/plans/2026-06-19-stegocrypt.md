@@ -33,7 +33,7 @@
 - [ ] **Step 1: Создать Flutter-проект**
 
 ```bash
-cd /home/pensioner/coding/my-projcets-private
+cd /home/pensioner/coding
 flutter create stegocrypt --org com.stegocrypt --platforms android,web
 cd stegocrypt
 ```
