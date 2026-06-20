@@ -35,10 +35,20 @@ active_projects: [kavi]
 - [x] Мобильная адаптация на всех страницах
 - [x] TypeScript без ошибок, коммит
 
-## Осталось по Флажку
+## Доделано по Флажку (финал 2026-06-20)
 
-- [ ] Собрать Docker-образ и запустить (`docker compose up -d --build`)
-- [ ] Проверить домен флажок.рф / flazhok.ru
+- [x] Безопасность: rate limiting (slowapi), webhook верификация ЮKassa, закрытые порты БД/Redis, security headers Caddy, secure cookie, пароль min 8 символов
+- [x] Checkout bug исправлен (checkout_url → confirmation_url)
+- [x] Cancel subscription endpoint (DELETE /subscription/cancel)
+- [x] Circular import исправлен (app/limiter.py)
+- [x] 502 на логин исправлен (ALTER USER + env выровнен)
+- [x] Лендинг полный редизайн: ProductMockup (браузер-хром + дашборд), iOS NotifCard, split-hero
+- [x] .env с полным набором переменных
+- [x] TypeScript чистый
+
+## Следующий шаг по Флажку
+
+- [ ] Купить домен flazhok.ru → задеплоить на VPS → настроить Postmark + ЮKassa prod
 
 ## Осталось по Кави (не срочно)
 
