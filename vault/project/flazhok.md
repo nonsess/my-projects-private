@@ -56,6 +56,12 @@ Redis (только docker-сеть, порт не выставлен)
 Parser (Celery worker + beat, 1 контейнер)
 ```
 
+Бэкенд — слоистая архитектура (router → service → repository → DB, классы + Depends-DI),
+все домены переведены. Доменные ошибки `services/errors.py` → единый handler в main.py.
+Тарифы — единый конфиг `app/plans.py`, раздаётся через `GET /plans`. Миграции
+накатываются на старте (`alembic upgrade head` в команде backend). См. решения
+flajok-backend-layered-architecture, flajok-tier-matrix-single-source.
+
 ## API роуты
 
 - POST /auth/register, /auth/login
@@ -68,11 +74,14 @@ Parser (Celery worker + beat, 1 контейнер)
 
 ## Тарифы
 
-| | free | basic (299₽/мес) | pro (799₽/мес) |
+| | free | basic (299₽/мес) | pro (599₽/мес) |
 |---|---|---|---|
 | Фильтров | 1 | 3 | 10 |
-| Email-алерты | нет | да | да |
-| Обновление | раз в день | раз в 3ч | раз в 1ч |
+| Email-алерты | нет | моментальные | моментальные |
+| Обновление | раз в 2 часа | раз в час | раз в час |
+| История цен | нет | 30 дней | полная |
+
+Единый источник правды по тарифам — `backend/app/plans.py`, раздаётся через `GET /plans`, фронт не хардкодит (см. решение tier-matrix-single-source). Free не получает email-алертов вообще.
 
 ## Известные ограничения / что не сделано
 

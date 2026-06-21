@@ -1,0 +1,1 @@
+- [Флажок инфра: миграции/restart](../../coding/my-projcets-private/vault/notes/flajok-infra-restart-migrations.md) — почему бэк 500-ил (БД легла без restart-политики), авто-alembic на старте, восстановление

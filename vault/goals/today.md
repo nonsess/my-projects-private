@@ -56,3 +56,22 @@ active_projects: [kavi]
 - [ ] Добавить VAPID ключи в .env на сервере
 - [ ] Подать уведомление в РКН (pd.rkn.gov.ru)
 - [ ] Зарегистрировать Яндекс.Бизнес + Google Business Profile
+
+## 2026-06-21 — Флажок (инфра, архитектура, безопасность)
+
+- [x] Бэк ожил: restart-политика postgres/redis + авто-`alembic upgrade head` на старте
+- [x] Единый источник правды по тарифам — `app/plans.py` + `GET /plans`, фронт без хардкода
+- [x] Слоистая архитектура всего бэка (router→service→repository→DB, Depends-DI)
+- [x] Аудит платежей + безопасности (2 агента)
+- [x] IDOR на /listings/{id} и /history; идемпотентность вебхука ЮKassa
+- [x] HttpOnly-cookie auth, OAuth-callback redirect, secret_key fail-fast, rate-limit за прокси
+- [x] Next 14.2.35 (CVE-2025-29927), HSTS, CORS сужен, mock-платежи fail-fast
+- [x] Refresh-токены + ревокация (jti в Redis, ротация, reuse-detection, серверный logout)
+- [x] Карта на странице объявления (виджет Яндекс)
+- [x] Тарифы: убрал «навсегда» (юр-риск), приоритет писем на всех платных, карточки одной высоты
+
+## Следующий шаг по Флажку (обновлено 2026-06-21)
+
+- [ ] Реквизиты (ФИО/ИНН/телефон) в оферту/политику — разблокирует приём оплаты
+- [ ] Деплой на VPS + домен flajok.ru + Postmark/ЮKassa prod
+- [ ] Платёжный харден: Idempotence-Key, сверка суммы, refund; решить рекуррент vs разовый; СБП
